@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import API from '../../services/api';
 
 function Login() {
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -9,16 +9,19 @@ function Login() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await axios.post('http://localhost:5000/api/users/login', formData);
-      alert(`Logged in as ${res.data.user}`);
-      // Save token to localStorage for future requests
-      localStorage.setItem('token', res.data.token);
-    } catch (err) {
-      alert(err.response?.data?.message || 'Login failed');
-    }
-  };
+  e.preventDefault();
+  try {
+    const res = await API.post('/users/login', formData);
+    console.log('Login response:', res.data);  // ✅ Check this in browser console
+    alert('Logged in successfully');
+    localStorage.setItem('token', res.data.token);  // ✅ This should now work
+  } catch (err) {
+    console.error('Login failed:', err);  // ✅ See full error in console
+    const errorMessage = err.response?.data?.message || err.message || 'Login failed';
+    alert('Error: ' + errorMessage);
+  }
+};
+
 
   return (
     <form onSubmit={handleSubmit}>

@@ -12,8 +12,11 @@ function Register() {
       const res = await API.post('/users/register', form);
       alert('User registered! Token: ' + res.data.token);
     } catch (err) {
-      alert('Error: ' + err.response.data.message);
-    }
+  console.error(err); //  debugging
+  const errorMessage =
+    err.response?.data?.message || err.message || 'An error occurred';
+  alert('Error: ' + errorMessage);
+}
   };
 
   return (
