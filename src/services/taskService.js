@@ -1,26 +1,42 @@
-import API from './api'; // ✅ CORRECT
+import axios from 'axios';
+import API from '../services/api'; 
 
+const API_URL = 'http://localhost:5000/api/tasks';
 
-export const getTasks = async (token) => {
-  return API.get('/tasks', {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+// Get tasks with Authorization header
+export const getTasks = async () => {
+  const token = localStorage.getItem('token');
+
+  const config = {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  };
+
+  const res = await API.get('/tasks', config);
+  return res.data;
 };
 
+// Create a new task
 export const createTask = async (taskData, token) => {
-  return API.post('/tasks', taskData, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const config = {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  };
+  return await axios.post(API_URL, taskData, config);
 };
 
+// Update a task
 export const updateTask = async (id, taskData, token) => {
-  return API.put(`/tasks/${id}`, taskData, {
+  return axios.put(`${API_URL}/${id}`, taskData, {
     headers: { Authorization: `Bearer ${token}` },
   });
 };
 
+// Delete a task
 export const deleteTask = async (id, token) => {
-  return API.delete(`/tasks/${id}`, {
+  return axios.delete(`${API_URL}/${id}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 };

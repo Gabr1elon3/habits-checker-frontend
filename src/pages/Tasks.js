@@ -10,38 +10,48 @@ const Tasks = () => {
   const [tasks, setTasks] = useState([]);
   const [newTask, setNewTask] = useState('');
   const [editingId, setEditingId] = useState(null);
-  const [editedTitle, setEditedTitle] = useState('');
+  const [editedName, setEditedName] = useState('');
   const token = localStorage.getItem('token');
 
-  const loadTasks = async () => {
-    try {
-      const res = await getTasks(token);
-      setTasks(res.data);
-    } catch (err) {
-      console.error('Failed to load tasks:', err);
-    }
-  };
-
   useEffect(() => {
+    const loadTasks = async () => {
+      try {
+        const res = await getTasks(token);
+        setTasks(Array.isArray(res.data) ? res.data : []);
+      } catch (err) {
+        console.error('Failed to load tasks:', err);
+        setTasks([]);
+      }
+    };
+
     loadTasks();
-  }, []);
+  }, [token]);
 
   const handleCreate = async (e) => {
     e.preventDefault();
     if (!newTask.trim()) return;
+
+    const taskPayload = {
+      name: newTask,
+      category: 'health',
+      deadline: '08:00',
+    };
+
     try {
-      await createTask({ title: newTask }, token);
+      await createTask(taskPayload, token);
       setNewTask('');
-      loadTasks(); // reload after creating
+      const res = await getTasks(token);
+      setTasks(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
-      console.error('Error creating task:', err);
+      console.error('Error creating task:', err.response?.data || err.message);
     }
   };
 
   const handleDelete = async (id) => {
     try {
       await deleteTask(id, token);
-      loadTasks(); // reload after delete
+      const res = await getTasks(token);
+      setTasks(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error('Error deleting task:', err);
     }
@@ -49,53 +59,88 @@ const Tasks = () => {
 
   const startEditing = (task) => {
     setEditingId(task._id);
-    setEditedTitle(task.title);
+    setEditedName(task.name);
   };
 
   const handleUpdate = async (id) => {
-    if (!editedTitle.trim()) return;
+    if (!editedName.trim()) return;
     try {
-      await updateTask(id, { title: editedTitle }, token);
+      await updateTask(id, { name: editedName }, token);
       setEditingId(null);
-      setEditedTitle('');
-      loadTasks(); // reload after update
+      setEditedName('');
+      const res = await getTasks(token);
+      setTasks(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error('Error updating task:', err);
     }
   };
 
   return (
-    <div>
-      <h2>Your Tasks</h2>
+    <div className="bg-white rounded-lg shadow-md p-6 w-full max-w-2xl mx-auto">
+      <h2 className="text-2xl font-semibold text-center mb-4 text-gray-800">Your Tasks</h2>
 
-      <form onSubmit={handleCreate}>
+      <form className="flex gap-2 mb-6" onSubmit={handleCreate}>
         <input
           type="text"
           value={newTask}
           onChange={(e) => setNewTask(e.target.value)}
           placeholder="Enter new task"
+          className="flex-grow px-3 py-2 border rounded-md"
         />
-        <button type="submit">Add Task</button>
+        <button
+          type="submit"
+          className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+        >
+          Add
+        </button>
       </form>
 
-      <ul>
-        {tasks.map((task) => (
-          <li key={task._id}>
+      <ul className="space-y-2">
+        {Array.isArray(tasks) && tasks.map((task) => (
+          <li
+            key={task._id}
+            className="flex justify-between items-center border-b pb-2"
+          >
             {editingId === task._id ? (
               <>
                 <input
                   type="text"
-                  value={editedTitle}
-                  onChange={(e) => setEditedTitle(e.target.value)}
+                  value={editedName}
+                  onChange={(e) => setEditedName(e.target.value)}
+                  className="flex-grow px-2 py-1 border rounded"
                 />
-                <button onClick={() => handleUpdate(task._id)}>Save</button>
-                <button onClick={() => setEditingId(null)}>Cancel</button>
+                <div className="flex gap-2 ml-2">
+                  <button
+                    onClick={() => handleUpdate(task._id)}
+                    className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => setEditingId(null)}
+                    className="bg-gray-300 text-black px-3 py-1 rounded hover:bg-gray-400"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </>
             ) : (
               <>
-                {task.title}
-                <button onClick={() => startEditing(task)}>Edit</button>
-                <button onClick={() => handleDelete(task._id)}>Delete</button>
+                <span className="text-gray-800 flex-grow">{task.name}</span>
+                <div className="flex gap-2 ml-2">
+                  <button
+                    onClick={() => startEditing(task)}
+                    className="bg-yellow-400 text-black px-3 py-1 rounded hover:bg-yellow-500"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(task._id)}
+                    className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                  >
+                    Delete
+                  </button>
+                </div>
               </>
             )}
           </li>
