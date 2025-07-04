@@ -17,9 +17,11 @@ const Tasks = () => {
     const loadTasks = async () => {
       try {
         const res = await getTasks(token);
-        setTasks(Array.isArray(res.data) ? res.data : []);
+        console.log("📥 Loaded tasks from backend:", res.data);
+        console.log("🔐 Token:", token);
+        setTasks(Array.isArray(res) ? res : []);
       } catch (err) {
-        console.error('Failed to load tasks:', err);
+        console.error('❌ Failed to load tasks:', err);
         setTasks([]);
       }
     };
@@ -37,13 +39,17 @@ const Tasks = () => {
       deadline: '08:00',
     };
 
+    console.log("🚀 Creating task with payload:", taskPayload);
+    console.log("🔐 Token:", token);
+
+
     try {
       await createTask(taskPayload, token);
       setNewTask('');
       const res = await getTasks(token);
       setTasks(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
-      console.error('Error creating task:', err.response?.data || err.message);
+      console.error('❌ Error creating task:', err.response?.data || err.message);
     }
   };
 
@@ -53,7 +59,7 @@ const Tasks = () => {
       const res = await getTasks(token);
       setTasks(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
-      console.error('Error deleting task:', err);
+      console.error('❌ Error deleting task:', err);
     }
   };
 
@@ -71,7 +77,7 @@ const Tasks = () => {
       const res = await getTasks(token);
       setTasks(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
-      console.error('Error updating task:', err);
+      console.error('❌ Error updating task:', err);
     }
   };
 
@@ -96,55 +102,59 @@ const Tasks = () => {
       </form>
 
       <ul className="space-y-2">
-        {Array.isArray(tasks) && tasks.map((task) => (
-          <li
-            key={task._id}
-            className="flex justify-between items-center border-b pb-2"
-          >
-            {editingId === task._id ? (
-              <>
-                <input
-                  type="text"
-                  value={editedName}
-                  onChange={(e) => setEditedName(e.target.value)}
-                  className="flex-grow px-2 py-1 border rounded"
-                />
-                <div className="flex gap-2 ml-2">
-                  <button
-                    onClick={() => handleUpdate(task._id)}
-                    className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
-                  >
-                    Save
-                  </button>
-                  <button
-                    onClick={() => setEditingId(null)}
-                    className="bg-gray-300 text-black px-3 py-1 rounded hover:bg-gray-400"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                <span className="text-gray-800 flex-grow">{task.name}</span>
-                <div className="flex gap-2 ml-2">
-                  <button
-                    onClick={() => startEditing(task)}
-                    className="bg-yellow-400 text-black px-3 py-1 rounded hover:bg-yellow-500"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(task._id)}
-                    className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </>
-            )}
-          </li>
-        ))}
+        {Array.isArray(tasks) && tasks.length > 0 ? (
+          tasks.map((task) => (
+            <li
+              key={task._id}
+              className="flex justify-between items-center border-b pb-2"
+            >
+              {editingId === task._id ? (
+                <>
+                  <input
+                    type="text"
+                    value={editedName}
+                    onChange={(e) => setEditedName(e.target.value)}
+                    className="flex-grow px-2 py-1 border rounded"
+                  />
+                  <div className="flex gap-2 ml-2">
+                    <button
+                      onClick={() => handleUpdate(task._id)}
+                      className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => setEditingId(null)}
+                      className="bg-gray-300 text-black px-3 py-1 rounded hover:bg-gray-400"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <span className="text-gray-800 flex-grow">{task.name}</span>
+                  <div className="flex gap-2 ml-2">
+                    <button
+                      onClick={() => startEditing(task)}
+                      className="bg-yellow-400 text-black px-3 py-1 rounded hover:bg-yellow-500"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(task._id)}
+                      className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </>
+              )}
+            </li>
+          ))
+        ) : (
+          <li className="text-gray-500 text-center">No tasks found</li>
+        )}
       </ul>
     </div>
   );
