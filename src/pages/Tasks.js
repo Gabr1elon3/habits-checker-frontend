@@ -1,10 +1,11 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   getTasks,
   createTask,
   deleteTask,
   updateTask,
 } from '../services/taskService';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const Tasks = () => {
   const [tasks, setTasks] = useState([]);
@@ -12,29 +13,49 @@ const Tasks = () => {
   const [newDeadline, setNewDeadline] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [editedName, setEditedName] = useState('');
-  const token = localStorage.getItem('token');
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [remindedTasks, setRemindedTasks] = useState(new Set());
 
-  const audio = new Audio('/reminder.mp3');
+  const token = localStorage.getItem('token');
+  const audioRef = useRef(null);
+
+  useEffect(() => {
+    // Create audio object once
+    audioRef.current = new Audio('/reminder.mp3');
+    audioRef.current.loop = true;
+  }, []);
 
   const isTimeToRemind = (taskTime) => {
     const now = new Date();
     const [taskHour, taskMinute] = taskTime.split(':').map(Number);
-    return (
-      now.getHours() === taskHour &&
-      now.getMinutes() === taskMinute
-    );
+    return now.getHours() === taskHour && now.getMinutes() === taskMinute;
   };
 
-  const showReminder = useCallback((taskName) => {
-    if (Notification.permission === 'granted') {
-      new Notification('🕒 Task Reminder', {
-        body: `It's time to do: ${taskName}`,
-      });
+  const showReminder = useCallback(
+    (task) => {
+      if (Notification.permission === 'granted') {
+        new Notification('🕒 Task Reminder', {
+          body: `It's time to do: ${task.name}`,
+        });
+      }
+
+      if (audioRef.current) {
+        audioRef.current
+          .play()
+          .then(() => setIsPlaying(true))
+          .catch((err) => console.warn('Audio play failed:', err));
+      }
+    },
+    []
+  );
+
+  const stopAudio = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      setIsPlaying(false);
     }
-    audio.play().catch((err) =>
-      console.warn('Audio play failed:', err)
-    );
-  }, [audio]);
+  };
 
   useEffect(() => {
     const loadTasks = async () => {
@@ -49,50 +70,59 @@ const Tasks = () => {
     loadTasks();
   }, [token]);
 
-  // Request Notification permission once
   useEffect(() => {
     if (Notification.permission !== 'granted') {
       Notification.requestPermission();
     }
   }, []);
 
-  // Check every 60s for tasks due
   useEffect(() => {
     const interval = setInterval(() => {
       tasks.forEach((task) => {
-        if (task.deadline && isTimeToRemind(task.deadline)) {
-          showReminder(task.name);
+        if (
+          task.deadline &&
+          isTimeToRemind(task.deadline) &&
+          !remindedTasks.has(task._id)
+        ) {
+          showReminder(task);
+          setRemindedTasks((prev) => new Set(prev).add(task._id));
         }
       });
     }, 10000);
 
     return () => clearInterval(interval);
-  }, [tasks, showReminder]);
+  }, [tasks, remindedTasks, showReminder]);
 
   const handleCreate = async (e) => {
     e.preventDefault();
     if (!newTask.trim() || !newDeadline.trim()) return;
 
-    const taskPayload = {
-      name: newTask,
-      category: 'health',
-      deadline: newDeadline,
-    };
-
     try {
-      await createTask(taskPayload, token);
+      await createTask(
+        {
+          name: newTask,
+          category: 'health',
+          deadline: newDeadline,
+        },
+        token
+      );
       setNewTask('');
       setNewDeadline('');
       const res = await getTasks(token);
       setTasks(Array.isArray(res) ? res : []);
     } catch (err) {
-      console.error('❌ Error creating task:', err.response?.data || err.message);
+      console.error('❌ Error creating task:', err);
     }
   };
 
   const handleDelete = async (id) => {
     try {
       await deleteTask(id, token);
+      setRemindedTasks((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(id);
+        return newSet;
+      });
       const res = await getTasks(token);
       setTasks(Array.isArray(res) ? res : []);
     } catch (err) {
@@ -123,7 +153,9 @@ const Tasks = () => {
       <nav className="bg-gradient-to-r from-indigo-600 to-purple-600 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <span className="text-white text-2xl font-bold tracking-tight">TaskMaster Pro</span>
+            <span className="text-white text-2xl font-bold tracking-tight">
+              TaskMaster Pro
+            </span>
           </div>
         </div>
       </nav>
@@ -157,65 +189,88 @@ const Tasks = () => {
             </button>
           </form>
 
+          {isPlaying && (
+            <div className="flex justify-center mb-6">
+              <button
+                onClick={stopAudio}
+                className="bg-red-600 text-white px-6 py-3 rounded-xl text-xl font-semibold hover:bg-red-700 transition"
+              >
+                🔇 Stop Ringtone
+              </button>
+            </div>
+          )}
+
           <ul className="space-y-6">
-            {Array.isArray(tasks) && tasks.length > 0 ? (
-              tasks.map((task) => (
-                <li
-                  key={task._id}
-                  className="flex items-center justify-between bg-gray-50 px-6 py-5 rounded-xl border-2 border-gray-200 shadow-sm"
+            <AnimatePresence>
+              {Array.isArray(tasks) && tasks.length > 0 ? (
+                tasks.map((task) => (
+                  <motion.li
+                    key={task._id}
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, x: 50 }}
+                    transition={{ duration: 0.3 }}
+                    className="flex items-center justify-between bg-gray-50 px-6 py-5 rounded-xl border-2 border-gray-200 shadow-sm"
+                  >
+                    {editingId === task._id ? (
+                      <>
+                        <input
+                          type="text"
+                          value={editedName}
+                          onChange={(e) => setEditedName(e.target.value)}
+                          className="flex-grow px-4 py-3 rounded-lg border-2 border-indigo-200 text-xl"
+                        />
+                        <div className="flex gap-3 ml-4">
+                          <button
+                            onClick={() => handleUpdate(task._id)}
+                            className="bg-gradient-to-r from-green-500 to-teal-500 text-white px-6 py-2 rounded-xl text-lg"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={() => setEditingId(null)}
+                            className="bg-gray-300 text-gray-800 px-6 py-2 rounded-xl text-lg"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex flex-col flex-grow text-center">
+                          <span className="text-gray-800 text-2xl font-medium">
+                            {task.name}
+                          </span>
+                          <span className="text-gray-500 text-md">🕒 {task.deadline}</span>
+                        </div>
+                        <div className="flex gap-3 ml-4">
+                          <button
+                            onClick={() => startEditing(task)}
+                            className="bg-gradient-to-r from-amber-400 to-orange-400 text-black px-6 py-2 rounded-xl text-lg"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDelete(task._id)}
+                            className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-6 py-2 rounded-xl text-lg"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </motion.li>
+                ))
+              ) : (
+                <motion.li
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-center text-gray-500 italic text-2xl py-10"
                 >
-                  {editingId === task._id ? (
-                    <>
-                      <input
-                        type="text"
-                        value={editedName}
-                        onChange={(e) => setEditedName(e.target.value)}
-                        className="flex-grow px-4 py-3 rounded-lg border-2 border-indigo-200 text-xl"
-                      />
-                      <div className="flex gap-3 ml-4">
-                        <button
-                          onClick={() => handleUpdate(task._id)}
-                          className="bg-gradient-to-r from-green-500 to-teal-500 text-white px-6 py-2 rounded-xl text-lg"
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={() => setEditingId(null)}
-                          className="bg-gray-300 text-gray-800 px-6 py-2 rounded-xl text-lg"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="flex flex-col flex-grow text-center">
-                        <span className="text-gray-800 text-2xl font-medium">{task.name}</span>
-                        <span className="text-gray-500 text-md">🕒 {task.deadline}</span>
-                      </div>
-                      <div className="flex gap-3 ml-4">
-                        <button
-                          onClick={() => startEditing(task)}
-                          className="bg-gradient-to-r from-amber-400 to-orange-400 text-black px-6 py-2 rounded-xl text-lg"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(task._id)}
-                          className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-6 py-2 rounded-xl text-lg"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </li>
-              ))
-            ) : (
-              <li className="text-center text-gray-500 italic text-2xl py-10">
-                No tasks found. Add one above to get started!
-              </li>
-            )}
+                  No tasks found. Add one above to get started!
+                </motion.li>
+              )}
+            </AnimatePresence>
           </ul>
         </div>
       </div>
