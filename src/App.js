@@ -11,16 +11,14 @@ const App = () => {
   return (
     <Router>
       <Navbar />
-      <div className="p-4">
+      <div className="pt-20 px-4 bg-gray-50 min-h-screen">
         <Routes>
           <Route path="/" element={<Navigate to="/login" />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route
             path="/tasks"
-            element={
-              token ? <Tasks /> : <Navigate to="/login" replace />
-            }
+            element={token ? <Tasks /> : <Navigate to="/login" replace />}
           />
         </Routes>
       </div>

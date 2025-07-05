@@ -4,9 +4,7 @@ import API from '../services/api';
 const API_URL = 'http://localhost:5000/api/tasks';
 
 // Get tasks with Authorization header
-export const getTasks = async () => {
-  const token = localStorage.getItem('token');
-
+export const getTasks = async (token) => {
   const config = {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -14,7 +12,7 @@ export const getTasks = async () => {
   };
 
   const res = await API.get('/tasks', config);
-  return res.data;
+  return res.data; // no need for .data.data
 };
 
 // Create a new task
