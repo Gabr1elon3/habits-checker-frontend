@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
+
   getTasks,
   createTask,
   deleteTask,
@@ -15,7 +17,7 @@ const Tasks = () => {
   const [editedName, setEditedName] = useState('');
   const [isPlaying, setIsPlaying] = useState(false);
   const [remindedTasks, setRemindedTasks] = useState(new Set());
-
+  const navigate = useNavigate();
   const token = localStorage.getItem('token');
   const audioRef = useRef(null);
 
@@ -48,14 +50,26 @@ const Tasks = () => {
     },
     []
   );
+  const recordResponse = (type) => {
+  const stats = JSON.parse(localStorage.getItem('taskStats')) || { yes: [], no: [] };
+  stats[type].push(new Date().toISOString());
+  localStorage.setItem('taskStats', JSON.stringify(stats));
+};
 
-  const stopAudio = () => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-      setIsPlaying(false);
-    }
-  };
+
+  const stopAudio = (response) => {
+  if (audioRef.current) {
+    audioRef.current.pause();
+    audioRef.current.currentTime = 0;
+    setIsPlaying(false);
+
+    // Log the response
+    recordResponse(response); // <-- this is what was missing
+
+    console.log(`User responded: ${response === 'yes' ? '✅ Will do the task' : '❌ Will not do the task'}`);
+  }
+};
+
 
   useEffect(() => {
     const loadTasks = async () => {
@@ -165,6 +179,15 @@ const Tasks = () => {
           <h2 className="text-4xl font-extrabold text-center mb-8 text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">
             ✨ Your Task List ✨
           </h2>
+          <div className="flex justify-end mb-4">
+  <button
+    onClick={() => navigate('/mystats')}
+    className="bg-indigo-500 text-white px-6 py-3 rounded-xl text-lg font-semibold hover:bg-indigo-600 transition"
+  >
+    📊 My Stats
+  </button>
+</div>
+
 
           <form className="flex gap-4 mb-10 flex-wrap" onSubmit={handleCreate}>
             <input
@@ -190,15 +213,21 @@ const Tasks = () => {
           </form>
 
           {isPlaying && (
-            <div className="flex justify-center mb-6">
-              <button
-                onClick={stopAudio}
-                className="bg-red-600 text-white px-6 py-3 rounded-xl text-xl font-semibold hover:bg-red-700 transition"
-              >
-                🔇 Stop Ringtone
-              </button>
-            </div>
-          )}
+  <div className="flex justify-center gap-4 mb-6">
+    <button
+      onClick={() => stopAudio('yes')}
+      className="bg-green-600 text-white px-6 py-3 rounded-xl text-xl font-semibold hover:bg-green-700 transition"
+    >
+      ✅ I'll do the task
+    </button>
+    <button
+      onClick={() => stopAudio('no')}
+      className="bg-red-600 text-white px-6 py-3 rounded-xl text-xl font-semibold hover:bg-red-700 transition"
+    >
+      ❌ I won't do the task
+    </button>
+  </div>
+)}
 
           <ul className="space-y-6">
             <AnimatePresence>

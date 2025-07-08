@@ -4,6 +4,7 @@ import Tasks from './pages/Tasks';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import Navbar from './components/Auth/Navbar';
+import MyStats from './pages/MyStats';
 
 const App = () => {
   const token = localStorage.getItem('token');
@@ -20,6 +21,7 @@ const App = () => {
             path="/tasks"
             element={token ? <Tasks /> : <Navigate to="/login" replace />}
           />
+          <Route path="/mystats" element={token ? <MyStats /> : <Navigate to="/login" replace />} />
         </Routes>
       </div>
     </Router>
