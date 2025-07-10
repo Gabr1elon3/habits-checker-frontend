@@ -4,7 +4,7 @@ import API from '../../services/api';
 
 function Login() {
   const [formData, setFormData] = useState({ email: '', password: '' });
-  const navigate = useNavigate(); // 👈 for redirecting after login
+  const navigate = useNavigate(); 
 
   const handleChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));

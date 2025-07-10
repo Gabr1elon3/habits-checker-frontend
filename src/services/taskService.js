@@ -2,8 +2,7 @@ import axios from 'axios';
 import API from '../services/api'; 
 
 const API_URL = 'http://localhost:5000/api/tasks';
-
-// Get tasks with Authorization header
+// Get all tasks
 export const getTasks = async (token) => {
   const config = {
     headers: {
@@ -12,10 +11,10 @@ export const getTasks = async (token) => {
   };
 
   const res = await API.get('/tasks', config);
-  return res.data; // no need for .data.data
+  return res.data; 
 };
 
-// Create a new task
+// this creates task 
 export const createTask = async (taskData, token) => {
   const config = {
     headers: {
