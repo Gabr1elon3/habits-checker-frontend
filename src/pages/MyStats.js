@@ -1,35 +1,72 @@
 import React, { useEffect, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { Link } from 'react-router-dom';
+import axios from 'axios';
 
 const MyStats = () => {
   const [stats, setStats] = useState({ yes: 0, no: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const raw = JSON.parse(localStorage.getItem('taskStats')) || { yes: [], no: [] };
-
-    const filterThisMonth = (dates) =>
-      dates.filter((dateStr) => {
-        const date = new Date(dateStr);
+    const fetchStats = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        console.log('Token in frontend:', token);
+        const response = await axios.get('/api/stats', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        // Map backend response to your existing frontend structure
+        setStats({ 
+          yes: response.data.completed || 0, 
+          no: response.data.overdue || 0 
+        });
+      } catch (err) {
+        console.error('Failed to fetch stats:', err);
+        setError('Failed to load statistics');
+        // Fallback to localStorage if API fails
+        const raw = JSON.parse(localStorage.getItem('taskStats')) || { yes: [], no: [] };
         const now = new Date();
-        return (
-          date.getMonth() === now.getMonth() &&
-          date.getFullYear() === now.getFullYear()
-        );
-      });
+        const yesCount = raw.yes.filter(dateStr => {
+          const date = new Date(dateStr);
+          return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+        }).length;
+        const noCount = raw.no.filter(dateStr => {
+          const date = new Date(dateStr);
+          return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+        }).length;
+        setStats({ yes: yesCount, no: noCount });
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    const yesCount = filterThisMonth(raw.yes).length;
-    const noCount = filterThisMonth(raw.no).length;
-
-    setStats({ yes: yesCount, no: noCount });
+    fetchStats();
   }, []);
 
   const chartData = [
-    { name: 'Did the task ✅', value: stats.yes },
-    { name: "Didn't do ❌", value: stats.no },
+    { name: 'Completed ✅', value: stats.yes },
+    { name: "Overdue ❌", value: stats.no },
   ];
 
   const colors = ['#10B981', '#EF4444']; // Green and Red
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
+        <div className="text-2xl text-indigo-600">Loading statistics...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
+        <div className="text-2xl text-red-500">{error}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-8">
@@ -49,6 +86,10 @@ const MyStats = () => {
           </Bar>
         </BarChart>
       </ResponsiveContainer>
+
+      <div className="mt-4 text-gray-600">
+        Showing data for {new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}
+      </div>
 
       <Link
         to="/tasks"
