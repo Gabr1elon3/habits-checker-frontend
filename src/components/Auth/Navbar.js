@@ -11,24 +11,96 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="fixed top-0 w-full bg-blue-600 text-white shadow-md z-50">
-      <div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
-        <h1 className="text-xl font-bold">Habits Checker</h1>
-        <div className="space-x-4">
+    <nav
+      className="navbar navbar-expand-lg fixed-top shadow-sm"
+      style={{
+        background: 'linear-gradient(to right, #667eea, #764ba2)',
+        minHeight: '160px', // Increased height
+      }}
+    >
+      <div className="container h-400 d-flex align-items-center justify-content-between">
+        <Link 
+          className="navbar-brand fw-bold fs-4 text-white" 
+          to="/"
+          style={{ letterSpacing: '0.5px' }}
+        >
+          🌈 Habits Checker
+        </Link>
+
+        <div className="d-flex align-items-center gap-3 h-100">
           {token ? (
             <>
-              <Link to="/tasks" className="hover:underline">Tasks</Link>
+              <Link 
+                className="btn btn-link text-white fw-semibold px-3 py-2"
+                to="/tasks"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.15)',
+                  borderRadius: '8px',
+                  transition: 'all 0.3s ease',
+                  height: '38px'
+                }}
+                onMouseEnter={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.25)'}
+                onMouseLeave={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.15)'}
+              >
+                Tasks
+              </Link>
               <button
                 onClick={handleLogout}
-                className="bg-red-500 px-3 py-1 rounded hover:bg-red-600"
+                className="btn fw-semibold shadow-sm"
+                style={{
+                  background: 'linear-gradient(to right, #ff416c, #ff4b2b)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '8px 16px',
+                  height: '38px',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => e.target.style.opacity = '0.9'}
+                onMouseLeave={(e) => e.target.style.opacity = '1'}
               >
                 Logout
               </button>
             </>
           ) : (
             <>
-              <Link to="/login" className="hover:underline">Login</Link>
-              <Link to="/register" className="hover:underline">Register</Link>
+              <Link 
+                className="btn fw-semibold shadow-sm"
+                to="/login"
+                style={{
+                  background: 'linear-gradient(to right, #4facfe, #00f2fe)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '8px 16px',
+                  height: '88px',
+                  transition: 'all 0.3s ease',
+                  marginLeft: '500px'
+                }}
+                onMouseEnter={(e) => e.target.style.opacity = '0.9'}
+                onMouseLeave={(e) => e.target.style.opacity = '1'}
+              >
+                Login
+              </Link>
+              <Link 
+                className="btn fw-semibold shadow-sm"
+                to="/register"
+                style={{
+                  background: 'linear-gradient(to right, #43e97b, #38f9d7)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '8px 16px',
+                  height: '38px',
+                  transition: 'all 0.3s ease',
+                  marginRight: '400px',
+                  moveDown: '90px'
+                }}
+                onMouseEnter={(e) => e.target.style.opacity = '0.9'}
+                onMouseLeave={(e) => e.target.style.opacity = '1'}
+              >
+                Register
+              </Link>
             </>
           )}
         </div>
