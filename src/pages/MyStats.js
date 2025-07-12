@@ -19,7 +19,7 @@ const MyStats = () => {
         
         // Map backend response to your existing frontend structure
         setStats({ 
-          yes: response.data.completed || 0, 
+          yes: response.data.completed || 1, 
           no: response.data.overdue || 0 
         });
       } catch (err) {
